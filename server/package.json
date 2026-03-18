@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "node index.js"
+    "build": "pip install yt-dlp && apt-get install -y ffmpeg || true",
+  "start": "node index.js"
   },
   "dependencies": {
     "axios": "^1.13.6",
