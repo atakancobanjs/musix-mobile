@@ -11,19 +11,21 @@ router.get("/url/:videoId", async (req, res) => {
   const { videoId } = req.params;
 
   exec(
-    `yt-dlp --extractor-args "${PLAYER_ARGS}" -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best" --no-playlist --get-url "https://www.youtube.com/watch?v=${videoId}"`,
+    `yt-dlp --extractor-args "${PLAYER_ARGS}" -f "${FORMAT}" --no-playlist --get-url "https://www.youtube.com/watch?v=${videoId}"`,
     (error, stdout, stderr) => {
+      // ✅ ekle
+      console.log("stdout:", stdout);
+      console.log("stderr:", stderr);
+      console.log("error:", error?.message);
+
       if (error) {
-        return res
-          .status(500)
-          .json({ error: "Failed to get stream URL", message: stderr });
+        return res.status(500).json({ error: "Failed to get stream URL", message: stderr });
       }
       const url = stdout.trim().split("\n")[0];
       res.json({ url });
     },
   );
 });
-
 // GET /api/stream/:videoId - yt-dlp + ffmpeg → mp3 pipe
 router.get("/:videoId", (req, res) => {
   const { videoId } = req.params;
