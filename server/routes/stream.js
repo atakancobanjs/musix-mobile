@@ -3,8 +3,11 @@ const router = express.Router();
 const { exec, spawn } = require("child_process");
 
 const PLAYER_ARGS = "youtube:player_client=android";
-const FFMPEG_PATH =
-  "C:\\Users\\PC\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1-full_build\\bin\\ffmpeg.exe";
+const FORMAT = "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best";
+
+// ✅ Render Linux ortamında ffmpeg PATH'de olmalı
+// Windows'taki hardcoded path kaldırıldı
+const FFMPEG_PATH = "ffmpeg";
 
 // GET /api/stream/url/:videoId - Direkt CDN URL döner
 router.get("/url/:videoId", async (req, res) => {
@@ -13,7 +16,6 @@ router.get("/url/:videoId", async (req, res) => {
   exec(
     `yt-dlp --extractor-args "${PLAYER_ARGS}" -f "${FORMAT}" --no-playlist --get-url "https://www.youtube.com/watch?v=${videoId}"`,
     (error, stdout, stderr) => {
-      // ✅ ekle
       console.log("stdout:", stdout);
       console.log("stderr:", stderr);
       console.log("error:", error?.message);
@@ -21,43 +23,40 @@ router.get("/url/:videoId", async (req, res) => {
       if (error) {
         return res.status(500).json({ error: "Failed to get stream URL", message: stderr });
       }
+
       const url = stdout.trim().split("\n")[0];
+
+      if (!url) {
+        return res.status(500).json({ error: "URL boş döndü" });
+      }
+
       res.json({ url });
     },
   );
 });
+
 // GET /api/stream/:videoId - yt-dlp + ffmpeg → mp3 pipe
 router.get("/:videoId", (req, res) => {
   const { videoId } = req.params;
 
   const ytdlp = spawn("yt-dlp", [
-    "--extractor-args",
-    PLAYER_ARGS,
-    "-f",
-    "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
-    "-o",
-    "-",
+    "--extractor-args", PLAYER_ARGS,
+    "-f", FORMAT,
+    "-o", "-",
     "--quiet",
     "--no-playlist",
     `https://www.youtube.com/watch?v=${videoId}`,
   ]);
 
   const ffmpeg = spawn(FFMPEG_PATH, [
-    "-i",
-    "pipe:0",
+    "-i", "pipe:0",
     "-vn",
-    "-acodec",
-    "libmp3lame",
-    "-ab",
-    "128k",
-    "-ar",
-    "44100",
-    "-write_xing",
-    "1",
-    "-id3v2_version",
-    "3",
-    "-f",
-    "mp3",
+    "-acodec", "libmp3lame",
+    "-ab", "128k",
+    "-ar", "44100",
+    "-write_xing", "1",
+    "-id3v2_version", "3",
+    "-f", "mp3",
     "pipe:1",
   ]);
 
@@ -68,7 +67,6 @@ router.get("/:videoId", (req, res) => {
   ytdlp.stdout.pipe(ffmpeg.stdin);
   ffmpeg.stdout.pipe(res);
 
-  // ✅ Pipe hatalarını yakala — client bağlantıyı koparınca EPIPE olur, normal
   ytdlp.stdout.on("error", () => {});
   ffmpeg.stdin.on("error", () => {});
   ffmpeg.stdout.on("error", () => {});
@@ -78,9 +76,7 @@ router.get("/:videoId", (req, res) => {
     console.error("yt-dlp:", data.toString());
   });
 
-  ffmpeg.stderr.on("data", () => {
-    // ffmpeg progress stderr'e yazar, hata değil
-  });
+  ffmpeg.stderr.on("data", () => {});
 
   ffmpeg.on("close", (code) => {
     if (code !== 0 && !res.headersSent) {
