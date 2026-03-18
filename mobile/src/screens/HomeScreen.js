@@ -57,6 +57,7 @@ export default function HomeScreen({ navigation }) {
   const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
 
   const { play } = useAudioPlayer();
 
@@ -70,14 +71,22 @@ export default function HomeScreen({ navigation }) {
 
   const fetchTrending = async () => {
     try {
+      const wakeTimer = setTimeout(() => {
+        setServerWaking(true);
+      }, 3000);
+
       const data = await getTrending("TR");
+
+      clearTimeout(wakeTimer);
+      setServerWaking(false);
       setTrending(data.items || []);
+    } catch (error) {
+      console.error("Trending hatası:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Trending şarkılara basınca trending queue'sunu set et
   const handleTrendingPress = useCallback(
     (item) => {
       useMusicStore.getState().setQueue(trending);
@@ -87,7 +96,6 @@ export default function HomeScreen({ navigation }) {
     [play, navigation, trending],
   );
 
-  // ✅ Son dinlenenlerden basınca recentlyPlayed queue'sunu set et
   const handleRecentPress = useCallback(
     (item) => {
       useMusicStore.getState().setQueue(recentlyPlayed);
@@ -164,6 +172,14 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.primary} />
+        {serverWaking && (
+          <View style={styles.wakeNotice}>
+            <Text style={styles.wakeTitle}>Sunucu uyanıyor</Text>
+            <Text style={styles.wakeSubtitle}>
+              İlk açılış biraz uzun sürebilir, lütfen bekle...
+            </Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -202,6 +218,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: COLORS.bg,
+    gap: 20,
+  },
+  wakeNotice: {
+    alignItems: "center",
+    paddingHorizontal: 40,
+    gap: 8,
+  },
+  wakeTitle: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  wakeSubtitle: {
+    color: COLORS.textSub,
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 20,
   },
   header: {
     paddingTop: 60,

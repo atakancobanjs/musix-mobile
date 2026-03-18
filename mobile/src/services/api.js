@@ -1,7 +1,9 @@
 // services/api.js
 const BASE_URL = "https://musix-mobile.onrender.com/api";
 
-const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
+// ✅ Render cold start 30-50sn sürdüğü için timeout 70sn
+// Normal istekler zaten çok daha hızlı tamamlanır
+const fetchWithTimeout = async (url, options = {}, timeout = 70000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
