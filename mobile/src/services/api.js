@@ -1,5 +1,5 @@
 // services/api.js
-const BASE_URL = "http://10.0.2.2:3000/api";
+const BASE_URL = "https://musix-mobile.onrender.com/api";
 
 const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
   const controller = new AbortController();
