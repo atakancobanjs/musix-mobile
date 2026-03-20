@@ -3,8 +3,8 @@ const router = express.Router();
 const { exec, spawn } = require("child_process");
 const path = require("path");
 
-const PLAYER_ARGS = "youtube:player_client=android";
-const FORMAT = "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best";
+const PLAYER_ARGS = "youtube:player_client=web";
+const FORMAT = "bestaudio/best";
 const FFMPEG_PATH = "ffmpeg";
 const COOKIES_PATH = path.resolve(__dirname, "../cookies.txt");
 
