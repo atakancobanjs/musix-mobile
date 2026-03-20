@@ -1,27 +1,28 @@
 const express = require("express");
 const router = express.Router();
 const { exec, spawn } = require("child_process");
+const path = require("path");
 
 const PLAYER_ARGS = "youtube:player_client=android";
 const FORMAT = "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best";
-
-// ✅ Render Linux ortamında ffmpeg PATH'de olmalı
-// Windows'taki hardcoded path kaldırıldı
 const FFMPEG_PATH = "ffmpeg";
+const COOKIES_PATH = path.resolve(__dirname, "../cookies.txt");
 
 // GET /api/stream/url/:videoId - Direkt CDN URL döner
 router.get("/url/:videoId", async (req, res) => {
   const { videoId } = req.params;
 
   exec(
-    `yt-dlp --extractor-args "${PLAYER_ARGS}" -f "${FORMAT}" --no-playlist --get-url "https://www.youtube.com/watch?v=${videoId}"`,
+    `yt-dlp --cookies "${COOKIES_PATH}" --extractor-args "${PLAYER_ARGS}" -f "${FORMAT}" --no-playlist --get-url "https://www.youtube.com/watch?v=${videoId}"`,
     (error, stdout, stderr) => {
       console.log("stdout:", stdout);
       console.log("stderr:", stderr);
       console.log("error:", error?.message);
 
       if (error) {
-        return res.status(500).json({ error: "Failed to get stream URL", message: stderr });
+        return res
+          .status(500)
+          .json({ error: "Failed to get stream URL", message: stderr });
       }
 
       const url = stdout.trim().split("\n")[0];
@@ -40,6 +41,7 @@ router.get("/:videoId", (req, res) => {
   const { videoId } = req.params;
 
   const ytdlp = spawn("yt-dlp", [
+    "--cookies", COOKIES_PATH,
     "--extractor-args", PLAYER_ARGS,
     "-f", FORMAT,
     "-o", "-",
